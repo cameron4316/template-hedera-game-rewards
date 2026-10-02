@@ -1,18 +1,17 @@
 import { formatUnits, parseAbi } from "viem";
 import { attest } from "../packages/nextjs/lib/rewards/attest";
 import { readRewardsConfig } from "../packages/nextjs/lib/rewards/config";
-import { GAS, NETWORKS, REWARD_TOKEN } from "../packages/nextjs/lib/rewards/constants";
+import { CASH_OUT_SLIPPAGE_PERCENT, GAS, NETWORKS, REWARD_TOKEN } from "../packages/nextjs/lib/rewards/constants";
 import { ROUND_MS, demoGame } from "../packages/nextjs/lib/rewards/games/demo";
 import { publishScore } from "../packages/nextjs/lib/rewards/hcs";
 import { registrationProblems } from "../packages/nextjs/lib/rewards/registration";
 import { entityIdToAddress, toMirrorTransactionId } from "../packages/nextjs/lib/rewards/ids";
-import { mirrorGet, tokenRelationship } from "../packages/nextjs/lib/rewards/mirror";
+import { mirrorGet, tokenHolding } from "../packages/nextjs/lib/rewards/mirror";
 import { HTS_TOKEN_ABI, SAUCERSWAP_V1_ROUTER_ABI } from "../packages/nextjs/lib/rewards/saucerswap";
 import { loadEnv } from "./lib/env";
 import { fail, operatorClients, readVaultDeployment, requireEnv, selectNetwork } from "./lib/hedera";
 
 const SCRIPTED_ROUND = { hits: 42, durationMs: ROUND_MS };
-const SLIPPAGE_PERCENT = 5n;
 
 async function main() {
   loadEnv();
@@ -58,7 +57,7 @@ async function main() {
   console.log(`  ✔ Score logged to HCS topic ${hcs.topicId} #${hcs.sequenceNumber}: ${hcsLink}`);
 
   console.log("3/4 Claiming from RewardVault");
-  const relationship = await tokenRelationship(network, account.address, config.tokenId);
+  const { relationship } = await tokenHolding(network, account.address, config.tokenId);
   if (relationship === "none") {
     await send(
       "Associated with reward token",
@@ -82,7 +81,7 @@ async function main() {
   );
 
   console.log(`4/4 Cashing out ${formatUnits(claim.amount, REWARD_TOKEN.decimals)} ${REWARD_TOKEN.symbol} on SaucerSwap V1`);
-  const router = entityIdToAddress(process.env.SAUCERSWAP_V1_ROUTER_ID || NETWORKS[network].saucerSwapV1RouterId);
+  const router = entityIdToAddress(config.routerId);
   const whbar = await publicClient.readContract({ address: router, abi: routerAbi, functionName: "whbar" });
   const path = [token, whbar] as const;
   const [, quoted] = await publicClient.readContract({
@@ -115,7 +114,7 @@ async function main() {
       address: router,
       abi: routerAbi,
       functionName: "swapExactTokensForETH",
-      args: [claim.amount, (quoted * (100n - SLIPPAGE_PERCENT)) / 100n, path, account.address, BigInt(Math.floor(Date.now() / 1000) + 600)],
+      args: [claim.amount, (quoted * (100n - CASH_OUT_SLIPPAGE_PERCENT)) / 100n, path, account.address, BigInt(Math.floor(Date.now() / 1000) + 600)],
       gas: BigInt(GAS.saucerSwapSwap),
     }),
   );

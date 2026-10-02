@@ -41,3 +41,6 @@ export const TOKEN_CREATION_HBAR = 20n;
 export const POOL_SEED = { tokens: 10_000n * TOKEN_UNIT, tinybars: 10n * 10n ** 8n };
 
 export const CLAIM_TTL_SECONDS = 600;
+
+/** Minimum HBAR out for a cash-out swap is the quote minus this percentage. */
+export const CASH_OUT_SLIPPAGE_PERCENT = 5n;

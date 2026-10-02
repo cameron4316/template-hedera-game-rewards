@@ -18,6 +18,9 @@ This is a Scaffold-HBAR app (Yarn workspaces, Hardhat, Next.js App Router) that 
 | `packages/nextjs/lib/rewards/registration.ts` | Checks each game's registered signer on the vault against `ATTESTOR_PRIVATE_KEY` |
 | `packages/nextjs/app/api/rewards/` | `GET health`, `POST attest` (409 when the vault's signer does not match the attestor) |
 | `scripts/` | Root `doctor`, `setup`, `deploy`, `demo` (TypeScript, run with tsx) |
+| `packages/nextjs/app/{page,play/page,rewards/page}.tsx` | Overview and leaderboard, game and claim, balance with association and cash-out |
+| `packages/nextjs/components/rewards/` | `TapGame`, `ConfigStatus`/`SetupHint`, `Leaderboard`, `CashOut` |
+| `packages/nextjs/hooks/useRewards.ts` | `useRewardsHealth()` (runtime config) and `useRewards()` (holding, associate, claimRound) |
 
 `lib/rewards` modules use relative imports only (no `~~`), so tsx and Hardhat can import them. Files the Hardhat tests and deploy import (`claim`, `constants`, `games`, `ids`, `mirror`, `saucerswap`) must not import viem or the Hiero SDK.
 
@@ -26,7 +29,8 @@ This is a Scaffold-HBAR app (Yarn workspaces, Hardhat, Next.js App Router) that 
 - **Testnet by default.** Mainnet requires `HEDERA_NETWORK=mainnet` and `--confirm-mainnet`; never weaken that guard.
 - **No secrets in git.** Only `.env.example` is committed. Secret variables never get a `NEXT_PUBLIC_` prefix.
 - **One `.env`.** The repo-root `.env` configures scripts, Hardhat (`hardhat.config.ts`) and Next.js (`next.config.ts`). Write to it with `upsertEnv` from `scripts/lib/env.ts`, which keeps comments.
-- **Every page boots with no `.env` and no deployment**, returning 200. Unconfigured states show the command to run.
+- **Every page boots with no `.env` and no deployment**, returning 200. Unconfigured states show the command to run. Pages get config from `/api/rewards/health` at runtime, never from build-time env or `deployedContracts.ts` types.
+- **Phone width.** Pages must work at 360px with no horizontal scroll.
 - **Every failure message names its fix.**
 - **Cross-platform.** Scripts are TypeScript run with tsx; no bash-only commands in `package.json`.
 - **HTS response codes.** Check every HTS call against 22 (SUCCESS) and revert with `HtsCallFailed(operation, code)`.

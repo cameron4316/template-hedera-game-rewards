@@ -12,7 +12,7 @@ import {
 } from "../../nextjs/lib/rewards/constants";
 import { GAMES } from "../../nextjs/lib/rewards/games";
 import { entityIdToAddress, longZeroAddressToEntityId, toRawEcdsaKey } from "../../nextjs/lib/rewards/ids";
-import { MirrorAccount, mirrorGet, tokenRelationship } from "../../nextjs/lib/rewards/mirror";
+import { MirrorAccount, mirrorGet, tokenHolding } from "../../nextjs/lib/rewards/mirror";
 import {
   EXCHANGE_RATE_ABI,
   EXCHANGE_RATE_ADDRESS,
@@ -85,7 +85,7 @@ const deployRewardVault: DeployFunction = async (hre: HardhatRuntimeEnvironment)
 
   const tokenContract = new Contract(token, HTS_TOKEN_ABI, signer);
   if (!(await vault.liquidityMinted())) {
-    const relationship = await tokenRelationship(network, deployer, tokenId);
+    const { relationship } = await tokenHolding(network, deployer, tokenId);
     if (relationship === "none") {
       await send(
         "Deployer associated with reward token",

@@ -22,13 +22,14 @@ export async function GET() {
   if (problems.length > 0)
     return NextResponse.json<HealthResponse>({ configured: false, problems, next: "yarn deploy" });
 
-  const { network, vault, topicId, tokenId } = config;
+  const { network, vault, topicId, tokenId, routerId } = config;
   return NextResponse.json<HealthResponse>({
     configured: true,
     network,
     vault,
     topicId,
     tokenId,
+    routerId,
     games: GAMES.map(game => game.id),
   });
 }

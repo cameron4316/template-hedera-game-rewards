@@ -4,6 +4,8 @@ import { RewardsConfig, readRewardsConfig } from "./config";
 import { CLAIM_TTL_SECONDS, NETWORKS, TOKEN_UNIT } from "./constants";
 import { ROUND_MS, demoGame } from "./games/demo";
 import type { ScoreMessage } from "./hcs";
+import { parseScoreMessage, rankScores } from "./leaderboard";
+import { describeVaultError } from "./vault";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { recoverTypedDataAddress } from "viem";
@@ -16,6 +18,7 @@ const config: RewardsConfig = {
   attestorKey,
   topicId: "0.0.2002",
   tokenId: "0.0.3003",
+  routerId: "0.0.19264",
   vault: "0x00000000000000000000000000000000000a0a0a",
 };
 const round = { hits: 42, durationMs: ROUND_MS };
@@ -129,5 +132,47 @@ describe("readRewardsConfig", () => {
   it("rejects an unknown network", () => {
     const result = readRewardsConfig({ HEDERA_NETWORK: "previewnet" }, config.vault);
     assert.ok(!result.ok && result.missing.includes("HEDERA_NETWORK (testnet or mainnet)"));
+  });
+});
+
+describe("leaderboard", () => {
+  const line = (player: string, score: number, gameId = "demo") =>
+    JSON.stringify({ v: 1, gameId, player, score, amount: "1", nonce: "0x01" });
+  const a = `0x${"a".repeat(40)}`;
+  const b = `0x${"b".repeat(40)}`;
+
+  it("rejects anything that is not a v1 score line", () => {
+    for (const text of ["not json", "{}", JSON.stringify({ v: 2 }), line("0x123", 5), line(a, 1.5)]) {
+      assert.equal(parseScoreMessage(text), null, text);
+    }
+    assert.equal(parseScoreMessage(line(a, 5))?.score, 5);
+  });
+
+  it("keeps each player's best score for the game, highest first", () => {
+    const ranked = rankScores(
+      [
+        { text: line(a, 10), timestamp: "1700000001.0" },
+        { text: line(b, 30), timestamp: "1700000002.0" },
+        { text: line(a.toUpperCase().replace("0X", "0x"), 40), timestamp: "1700000003.0" },
+        { text: line(b, 99, "other-game"), timestamp: "1700000004.0" },
+        { text: "spam", timestamp: "1700000005.0" },
+      ],
+      "demo",
+    );
+    assert.deepEqual(
+      ranked.map(e => [e.player.toLowerCase(), e.bestScore, e.rounds]),
+      [
+        [a, 40, 2],
+        [b, 30, 1],
+      ],
+    );
+  });
+});
+
+describe("describeVaultError", () => {
+  it("explains association failures and passes through unknown errors", () => {
+    assert.match(describeVaultError("HtsCallFailed", ["transferToken", 184n]) ?? "", /Associate/);
+    assert.match(describeVaultError("InvalidSignature") ?? "", /yarn deploy/);
+    assert.equal(describeVaultError("SomethingElse"), undefined);
   });
 });

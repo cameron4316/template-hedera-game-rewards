@@ -3,7 +3,15 @@ import type { NetworkName } from "./constants";
 import type { HcsReceipt } from "./hcs";
 
 export type HealthResponse =
-  | { configured: true; network: NetworkName; vault: Hex; topicId: string; tokenId: string; games: string[] }
+  | {
+      configured: true;
+      network: NetworkName;
+      vault: Hex;
+      topicId: string;
+      tokenId: string;
+      routerId: string;
+      games: string[];
+    }
   | { configured: false; problems: string[]; next: string };
 
 export type AttestResponse = { claim: SerializedClaim; signature: Hex; hcs: HcsReceipt };

@@ -9,6 +9,7 @@ export type RewardsConfig = {
   attestorKey: Hex;
   topicId: string;
   tokenId: string;
+  routerId: string;
   vault: Hex;
 };
 
@@ -47,6 +48,7 @@ export function readRewardsConfig(
       attestorKey: toRawEcdsaKey(env.ATTESTOR_PRIVATE_KEY!),
       topicId: env.NEXT_PUBLIC_SCORE_TOPIC_ID!,
       tokenId: env.NEXT_PUBLIC_REWARD_TOKEN_ID!,
+      routerId: env.SAUCERSWAP_V1_ROUTER_ID || NETWORKS[network].saucerSwapV1RouterId,
       vault,
     },
   };

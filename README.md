@@ -115,6 +115,19 @@ Everything reads the root `.env`: scripts, Hardhat and the Next.js server. Only 
 
 The vault address comes from `packages/nextjs/contracts/deployedContracts.ts`. It ships empty, and `yarn deploy` fills it with your deployment.
 
+## The app
+
+Every page loads and returns 200 with no `.env` and no deployment, showing what to run instead. Pages read the network, vault, token, topic and router from `GET /api/rewards/health` at runtime, so after `yarn setup` or `yarn deploy` you only need to restart `yarn dev`. The layout works down to 360px phone width.
+
+| Route | What it does | Before setup and deploy |
+| --- | --- | --- |
+| `/` | Overview, live config status from `/api/rewards/health`, and a leaderboard of best scores read from the HCS topic through the mirror node | Lists the missing variables and the commands to run |
+| `/play` | The 30-second tap-the-target game (`components/rewards/TapGame.tsx`). When a round ends, **Claim reward** calls the attest API, then sends `claim()` from the connected wallet. It links the claim transaction and the HCS message | Playable; claiming is disabled and the page explains why |
+| `/rewards` | ARCADE balance and association status (from the mirror node), an **Associate** button, and cash-out: SaucerSwap `getAmountsOut` quote, `approve` if needed, then `swapExactTokensForETH` along `[ARCADE, WHBAR token 0.0.15058]` with 5% slippage protection | Explains what `yarn deploy` creates |
+| `/debug` | Scaffold-HBAR's contract debugger | Works once `deployedContracts.ts` is filled |
+
+Wallet transactions use explicit gas limits from `GAS` in `lib/rewards/constants.ts`, measured on testnet: claim 300k (plus 900k on a first auto-associated receipt), associate and approve 1M, swap 1.2M. Before sending `claim()`, the app simulates it, so vault errors such as "not associated" or "claim expired" appear as plain sentences instead of a failed transaction. `hooks/useRewards.ts` wraps the attest call, the association check and the claim, so other game pages can reuse it.
+
 ## How it works
 
 1. The game posts `{ gameId, player, result }` to `POST /api/rewards/attest`.
@@ -144,7 +157,7 @@ curl -X POST http://localhost:3000/api/rewards/attest \
 1. Write a `GameDefinition` next to `packages/nextjs/lib/rewards/games/demo.ts`. It needs an `id`, `maxPerClaim` and `dailyCap` (in the token's smallest unit, 8 decimals), and `validate(result)`. `validate` is the only place your game's rules live.
 2. Add it to `GAMES` in `packages/nextjs/lib/rewards/games/index.ts`.
 3. Run `yarn deploy`. It registers every game in `GAMES` on the vault (keyed by `keccak256(id)`) with the attestor as signer, and updates caps that changed.
-4. From your game, POST the result to `/api/rewards/attest`, then send `claim()` from the player's wallet. Any engine works: Unity, Godot and native games make the same HTTP call shown above.
+4. From your game, POST the result to `/api/rewards/attest`, then send `claim()` from the player's wallet. In this Next.js app, replace `TapGame` and call `useRewards().claimRound(gameId, result)`. Any engine works: Unity, Godot and native games make the same HTTP call shown above, with `requestClaim()` in `lib/rewards/api.ts` as the reference client.
 
 The vault caps limit the damage from a cheated client or a leaked attestor key. They do not make client-reported results trustworthy, so keep anything valuable server-authoritative.
 
@@ -192,6 +205,8 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 | A claim reverts with `HtsCallFailed("transferToken", 184)` | The player is not associated and has no free auto-association slots | Associate the account with the token (HashPack, or `associate()` on the token address), then claim again |
 | `HtsCallFailed(…)` or a revert whose trace shows `INSUFFICIENT_GAS` | Gas limit too low for an HTS call; first-time auto-association costs about 700k | Raise the matching value in `GAS` (`lib/rewards/constants.ts`) |
 | `/api/rewards/attest` returns 503 | The server cannot see a variable or the deployment | Check `GET /api/rewards/health`, which lists exactly what is missing |
+| `/rewards` says `… has no Hedera testnet account yet` | The connected wallet (often the scaffold's burner wallet) has never received HBAR, so no Hedera account exists for it | Connect a funded testnet wallet, or send HBAR to that address from the portal faucet |
+| Wallet shows **Wrong network** or transactions fail with a chain mismatch | The wallet is not on Hedera testnet (chain 296) | Switch networks from the wallet button in the header |
 | `/api/rewards/attest` returns 409 `registered to signer …` | `ATTESTOR_PRIVATE_KEY` changed, or `.env` points at a different vault | Run `yarn deploy`; it re-registers every game to the current attestor |
 
 ## Compliance

@@ -154,7 +154,12 @@ describe("RewardVault", () => {
     const compiledAbi = ethers.Interface.from(vault.interface.fragments);
     for (const fragment of new ethers.Interface(REWARD_VAULT_ABI).fragments) {
       const signature = fragment.format("sighash");
-      const compiled = fragment.type === "event" ? compiledAbi.getEvent(signature) : compiledAbi.getFunction(signature);
+      const compiled =
+        fragment.type === "event"
+          ? compiledAbi.getEvent(signature)
+          : fragment.type === "error"
+            ? compiledAbi.getError(signature)
+            : compiledAbi.getFunction(signature);
       expect(compiled?.format("full"), signature).to.equal(fragment.format("full"));
     }
   });

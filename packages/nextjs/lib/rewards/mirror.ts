@@ -21,14 +21,28 @@ export async function mirrorGet<T>(network: NetworkName, path: string, { waitMs 
 
 export type MirrorAccount = { account: string; evm_address: string; max_automatic_token_associations: number };
 
+export type TokenRelationship = "associated" | "auto" | "none";
+
 /**
- * How `account` can receive `tokenId`: already `associated`; `auto`-associated on first receipt (unlimited slots,
- * costs extra gas, see GAS.autoAssociation); or `none`, so it must associate first. Accounts with a limited number
- * of slots count as `none`, because the mirror node does not report how many are free.
+ * How `account` holds `tokenId`. `relationship` is `associated`; `auto` (associated on first receipt because the
+ * account has unlimited slots, which costs GAS.autoAssociation extra); or `none`, so it must associate first.
+ * Accounts with a limited number of slots count as `none`, because the mirror node does not report how many are free.
  */
-export async function tokenRelationship(network: NetworkName, account: string, tokenId: string) {
-  const { tokens } = await mirrorGet<{ tokens: unknown[] }>(network, `/accounts/${account}/tokens?token.id=${tokenId}`);
-  if (tokens.length > 0) return "associated";
-  const info = await mirrorGet<MirrorAccount>(network, `/accounts/${account}`);
-  return info.max_automatic_token_associations === -1 ? "auto" : "none";
+export async function tokenHolding(network: NetworkName, account: string, tokenId: string) {
+  const res = await fetch(`${mirrorUrl(network)}/api/v1/accounts/${account}`);
+  if (res.status === 404) {
+    throw new Error(
+      `${account} has no Hedera ${network} account yet. Send it HBAR from https://portal.hedera.com/faucet.`,
+    );
+  }
+  if (!res.ok) throw new Error(`Mirror node returned ${res.status} for account ${account}. Retry in a moment.`);
+  const info = (await res.json()) as MirrorAccount;
+
+  const { tokens } = await mirrorGet<{ tokens: { balance: number }[] }>(
+    network,
+    `/accounts/${info.account}/tokens?token.id=${tokenId}`,
+  );
+  const relationship: TokenRelationship =
+    tokens.length > 0 ? "associated" : info.max_automatic_token_associations === -1 ? "auto" : "none";
+  return { accountId: info.account, relationship, balance: BigInt(tokens[0]?.balance ?? 0) };
 }
