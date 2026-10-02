@@ -8,30 +8,19 @@ export type ScaffoldConfig = {
   walletConnectProjectId: string;
 };
 
-const hederaLocalFork = {
-  ...chains.hardhat,
-  name: "Hedera Local Fork",
-  nativeCurrency: {
-    name: "HBAR",
-    symbol: "HBAR",
-    // Note: HBAR has 8 protocol decimals (tinybar),
-    // but JSON-RPC msg.value & gasPrice use 18 decimals for EVM compatibility.
-    // We keep 18 here so tx.value formatting matches what viem/hardhat return.
-    decimals: 18,
-  },
-} as const satisfies chains.Chain;
-
-const targetNetworks = [chains.hederaTestnet, chains.hedera, hederaLocalFork] as const satisfies readonly [
-  chains.Chain,
-  ...chains.Chain[],
-];
+// The app accepts exactly one network, chosen by HEDERA_NETWORK in the root .env (exposed by next.config.ts).
+// Wallets on any other chain see "Wrong network" with a switch button.
+const targetNetworks = [
+  process.env.NEXT_PUBLIC_HEDERA_NETWORK === "mainnet" ? chains.hedera : chains.hederaTestnet,
+] as const satisfies readonly [chains.Chain, ...chains.Chain[]];
 
 const scaffoldConfig = {
   targetNetworks,
 
   pollingInterval: 10000,
 
-  enableBurnerWallet: true,
+  // Off: a burner auto-connects an unfunded address that has no Hedera account.
+  enableBurnerWallet: false,
 
   rpcOverrides: {
     [chains.hedera.id]: process.env.NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL || "https://mainnet.hashio.io/api",

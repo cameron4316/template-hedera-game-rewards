@@ -21,7 +21,7 @@ const parseAmount = (input: string) => {
 
 /** Swaps reward tokens for HBAR on SaucerSwap V1: quote, approve the router if needed, swapExactTokensForETH. */
 export const CashOut = () => {
-  const { address, config, chainId, token, holding, refreshHolding } = useRewards();
+  const { address, config, chainId, wrongNetwork, token, holding, refreshHolding } = useRewards();
   const { writeContractAsync } = useWriteContract();
   const transact = useTransactor();
   const [input, setInput] = useState("");
@@ -61,7 +61,7 @@ export const CashOut = () => {
   const tooMuch = amountIn > balance;
 
   const cashOut = async () => {
-    if (!address || !router || !token || !path || quote === undefined) return;
+    if (wrongNetwork || !address || !router || !token || !path || quote === undefined) return;
     setBusy(true);
     setError(undefined);
     try {
@@ -138,7 +138,7 @@ export const CashOut = () => {
         type="button"
         className="btn btn-primary"
         onClick={cashOut}
-        disabled={busy || tooMuch || quote === undefined || quote === 0n}
+        disabled={busy || wrongNetwork || tooMuch || quote === undefined || quote === 0n}
       >
         {busy ? <span className="loading loading-spinner loading-sm" /> : null}
         {(allowance ?? 0n) < amountIn ? "Approve and cash out" : "Cash out"}

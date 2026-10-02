@@ -5,6 +5,7 @@ import type { NextPage } from "next";
 import { BaseError, formatUnits } from "viem";
 import { CashOut } from "~~/components/rewards/CashOut";
 import { SetupHint } from "~~/components/rewards/ConfigStatus";
+import { WrongNetworkNotice } from "~~/components/rewards/WrongNetworkNotice";
 import { useRewards, useRewardsHealth } from "~~/hooks/useRewards";
 import { NETWORKS, REWARD_TOKEN } from "~~/lib/rewards/constants";
 
@@ -16,7 +17,7 @@ const ASSOCIATION_TEXT = {
 
 const Rewards: NextPage = () => {
   const health = useRewardsHealth();
-  const { address, config, holding, associate } = useRewards();
+  const { address, config, wrongNetwork, holding, associate } = useRewards();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -40,6 +41,8 @@ const Rewards: NextPage = () => {
           Your {REWARD_TOKEN.symbol} balance, token association and cash-out to HBAR on SaucerSwap.
         </p>
       </div>
+
+      <WrongNetworkNotice />
 
       {!config ? (
         <div className="card bg-base-100 shadow-md">
@@ -79,7 +82,12 @@ const Rewards: NextPage = () => {
                     . {ASSOCIATION_TEXT[holding.data.relationship]}
                   </p>
                   {holding.data.relationship !== "associated" && (
-                    <button type="button" className="btn btn-secondary" onClick={onAssociate} disabled={busy}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={onAssociate}
+                      disabled={busy || wrongNetwork}
+                    >
                       {busy && <span className="loading loading-spinner loading-sm" />}
                       Associate {REWARD_TOKEN.symbol}
                     </button>

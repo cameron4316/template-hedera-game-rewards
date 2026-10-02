@@ -9,6 +9,8 @@ if (fs.existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   reactStrictMode: true,
+  // Public, non-secret: lets scaffold.config.ts accept only the configured network.
+  env: { NEXT_PUBLIC_HEDERA_NETWORK: process.env.HEDERA_NETWORK === "mainnet" ? "mainnet" : "testnet" },
   serverExternalPackages: ["@hiero-ledger/sdk"],
   devIndicators: false,
   typescript: {

@@ -6,6 +6,7 @@ import type { NextPage } from "next";
 import { BaseError, formatUnits } from "viem";
 import { SetupHint } from "~~/components/rewards/ConfigStatus";
 import { TapGame, TapResult } from "~~/components/rewards/TapGame";
+import { WrongNetworkNotice } from "~~/components/rewards/WrongNetworkNotice";
 import { useRewards, useRewardsHealth } from "~~/hooks/useRewards";
 import { NETWORKS, REWARD_TOKEN } from "~~/lib/rewards/constants";
 import { demoGame } from "~~/lib/rewards/games/demo";
@@ -14,7 +15,7 @@ type Claimed = Awaited<ReturnType<ReturnType<typeof useRewards>["claimRound"]>>;
 
 const Play: NextPage = () => {
   const health = useRewardsHealth();
-  const { address, config, holding, claimRound } = useRewards();
+  const { address, config, wrongNetwork, holding, claimRound } = useRewards();
   const [result, setResult] = useState<TapResult>();
   const [claimed, setClaimed] = useState<Claimed>();
   const [busy, setBusy] = useState(false);
@@ -32,14 +33,16 @@ const Play: NextPage = () => {
     : !config
       ? "Rewards are not configured yet, so rounds cannot be claimed."
       : !address
-        ? "Connect a wallet on Hedera testnet to claim."
-        : holding.error
-          ? holding.error.message
-          : holding.data?.relationship === "none"
-            ? "Associate your account with the reward token on the Rewards page before claiming."
-            : validation && !validation.ok
-              ? `This round cannot be rewarded: ${validation.reason}.`
-              : undefined;
+        ? `Connect a wallet on Hedera ${config.network} to claim.`
+        : wrongNetwork
+          ? `Switch your wallet to Hedera ${config.network} to claim.`
+          : holding.error
+            ? holding.error.message
+            : holding.data?.relationship === "none"
+              ? "Associate your account with the reward token on the Rewards page before claiming."
+              : validation && !validation.ok
+                ? `This round cannot be rewarded: ${validation.reason}.`
+                : undefined;
 
   const claim = async () => {
     if (!result) return;
@@ -64,6 +67,8 @@ const Play: NextPage = () => {
           Playing is free.
         </p>
       </div>
+
+      <WrongNetworkNotice />
 
       <TapGame onFinish={onFinish} />
 

@@ -44,7 +44,8 @@
     "postinstall": "husky",
     "precommit": "lint-staged",
     "setup": "tsx scripts/setup.ts",
-    "test": "yarn hardhat:test && yarn next:test"
+    "test": "yarn hardhat:test && yarn next:test",
+    "verify": "tsx scripts/verify.ts"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {

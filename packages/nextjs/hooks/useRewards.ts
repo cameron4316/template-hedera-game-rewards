@@ -38,12 +38,15 @@ function vaultRevertMessage(error: unknown) {
 
 /** Wraps the attest API, the association check and the claim() write for the connected wallet. */
 export function useRewards() {
-  const { address } = useAccount();
+  const { address, chainId: walletChainId } = useAccount();
   const { config, chainId } = useRewardsHealth();
   const publicClient = usePublicClient({ chainId });
   const { writeContractAsync } = useWriteContract();
   const transact = useTransactor();
   const token = config ? entityIdToAddress(config.tokenId) : undefined;
+  /** True when a wallet is connected to any chain other than the configured one; every write is blocked. */
+  const wrongNetwork = Boolean(address && chainId && walletChainId !== chainId);
+  const networkName = config ? `Hedera ${config.network}` : "Hedera";
 
   const holding = useQuery({
     queryKey: ["reward-holding", config?.tokenId, address],
@@ -58,6 +61,7 @@ export function useRewards() {
   };
 
   const associate = async () => {
+    if (wrongNetwork) throw new Error(`Switch your wallet to ${networkName} first.`);
     await transact(() =>
       writeContractAsync({
         address: token!,
@@ -72,7 +76,9 @@ export function useRewards() {
 
   /** Attests a finished round, then sends claim() from the connected wallet. Throws a player-facing message. */
   const claimRound = async (gameId: string, result: unknown) => {
-    if (!config || !address || !publicClient) throw new Error("Connect a wallet on Hedera testnet first.");
+    if (!config || !address || !publicClient) throw new Error("Connect a wallet first.");
+    // Checked before attesting, so a wrong-network attempt never logs a score to HCS.
+    if (wrongNetwork) throw new Error(`Switch your wallet to ${networkName} first.`);
     const { relationship } = (await holding.refetch({ throwOnError: true })).data!;
     if (relationship === "none") throw new Error(describeVaultError("HtsCallFailed", ["transferToken", 184]));
 
@@ -104,5 +110,5 @@ export function useRewards() {
     return { hash, amount: args[0].amount, hcs: attested.hcs };
   };
 
-  return { address, config, chainId, token, holding, refreshHolding, associate, claimRound };
+  return { address, config, chainId, wrongNetwork, token, holding, refreshHolding, associate, claimRound };
 }

@@ -67,7 +67,14 @@ deploying "RewardVault" ...: deployed at 0x42aD…fD46 with 1819655 gas
 ✔ Reward token 0.0.10829563 written to NEXT_PUBLIC_REWARD_TOKEN_ID
 ```
 
-**4. `yarn demo`**: a headless end-to-end run: a scripted round, attestation, HCS log, claim and swap. It prints a HashScan link for each step.
+**4. `yarn verify`**: verifies `RewardVault` on Sourcify, which HashScan uses to show the contract source and decode its `Claimed` events. It needs no API key.
+
+```
+✅ exact_match — verified on Sourcify
+   HashScan: https://hashscan.io/testnet/contract/0x42aDec3dde288e7298A14eB403d9d49CC510fD46
+```
+
+**5. `yarn demo`**: a headless end-to-end run: a scripted round, attestation, HCS log, claim and swap. It prints a HashScan link for each step.
 
 ```
 2/4 Attested 42 ARCADE
@@ -78,7 +85,9 @@ deploying "RewardVault" ...: deployed at 0x42aD…fD46 with 1819655 gas
   ✔ Swapped for ~0.04250588 HBAR (gas 907708): https://hashscan.io/testnet/transaction/0x5557…
 ```
 
-**5. `yarn dev`**: starts the app on http://localhost:3000. `GET /api/rewards/health` reports whether everything is configured, including whether the vault's registered signer for each game matches `ATTESTOR_PRIVATE_KEY`.
+**6. `yarn dev`**: starts the app on http://localhost:3000. `GET /api/rewards/health` reports whether everything is configured, including whether the vault's registered signer for each game matches `ATTESTOR_PRIVATE_KEY`.
+
+In dev mode, Next.js compiles each route the first time you open it, so a page's first visit can take several seconds (about 7 seconds per page measured here); later clicks take about 30 ms. A production build (`yarn next:build`, then `yarn next:serve`) has no such delay: clicks between pages measured 6–14 ms.
 
 ## Costs
 
@@ -91,6 +100,16 @@ Measured on testnet with the defaults in `lib/rewards/constants.ts`:
 | `yarn demo` | 1.38 | Claim 0.08, router approval 0.60, swap 0.70, HCS message 0.002 |
 
 Plan on **100 testnet HBAR** so a retried deploy or a few extra demo runs never stall.
+
+A player pays for their own wallet transactions. Associate and claim were measured with a fresh player account, and cash-out with `yarn demo`:
+
+| Player action | HBAR |
+| --- | --- |
+| Associate ARCADE (once per account) | about 0.89 |
+| Claim a reward | about 0.088 |
+| Cash-out: approve the router, then swap | about 0.60 + 0.70 |
+
+MetaMask shows a much larger "max fee" before you confirm (13.35 HBAR on a claim). That is the gas limit times the maximum gas price, not the charge. Hedera charges the gas actually used, with a floor of 80% of the limit, at the network gas price. The limits here are kept close to measured usage, so the real charge is the figure in the table.
 
 Gas notes behind those numbers:
 
@@ -116,6 +135,26 @@ Everything reads the root `.env`: scripts, Hardhat and the Next.js server. Only 
 The vault address comes from `packages/nextjs/contracts/deployedContracts.ts`. It ships empty, and `yarn deploy` fills it with your deployment.
 
 ## The app
+
+### Try it in a browser
+
+Test with a **fresh player account**, not the operator account. The operator already holds liquidity tokens and pays for every attestation, so it hides association and balance problems a real player would hit.
+
+1. Create a second ECDSA account at [portal.hedera.com](https://portal.hedera.com) and fund it with about 5 testnet HBAR from the faucet.
+2. In MetaMask, add Hedera Testnet (**Settings → Networks → Add a network manually**):
+
+   | Field | Value |
+   | --- | --- |
+   | Network name | Hedera Testnet |
+   | RPC URL | https://testnet.hashio.io/api |
+   | Chain ID | 296 |
+   | Currency symbol | HBAR |
+   | Block explorer URL | https://hashscan.io/testnet |
+
+3. Import the player account's private key into MetaMask, select Hedera Testnet, then open http://localhost:3000 and connect.
+
+The app accepts only the network `HEDERA_NETWORK` selects (testnet by default). On any other chain, the header and the Play and Rewards pages show **Wrong network** with a switch button. Associate, Claim, Approve and Cash out stay disabled, and the attest API is never called, so no score is logged to HCS. There is no burner wallet: Scaffold-HBAR's burner would auto-connect an unfunded address that has no Hedera account.
+
 
 Every page loads and returns 200 with no `.env` and no deployment, showing what to run instead. Pages read the network, vault, token, topic and router from `GET /api/rewards/health` at runtime, so after `yarn setup` or `yarn deploy` you only need to restart `yarn dev`. The layout works down to 360px phone width.
 
@@ -179,10 +218,12 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 | `yarn doctor` | Checks Node, Yarn, Git, RPC, mirror node, operator key and balance | Nothing |
 | `yarn setup` | Creates `.env`, generates the attestor key, creates the HCS score topic | Operator ID and key in `.env` |
 | `yarn deploy` | Deploys the vault, creates the token, registers games, seeds the SaucerSwap pool | `yarn setup`, about 50 HBAR |
+| `yarn verify` | Verifies RewardVault on Sourcify so HashScan shows its source and decodes events | `yarn deploy` |
 | `yarn demo` | Headless round → attest → HCS → claim → swap, with HashScan links | `yarn deploy` |
 | `yarn dev` | Next.js on port 3000 | Nothing |
 | `yarn test` | Contract tests (HTS mocked) and rewards unit tests, offline | Nothing |
 | `yarn lint`, `yarn check-types`, `yarn next:build` | Static checks and production build | Nothing |
+| `yarn next:serve` | Serves the production build on port 3000 | `yarn next:build` |
 
 ## Testing
 
@@ -191,7 +232,7 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 - `packages/hardhat/test/RewardVault.test.ts`: valid claims, replayed nonces, expired claims, wrong signers, tampered claims, per-claim and daily caps, paused and unknown games, HTS error codes, and liquidity and admin rules. Claims are signed with the same `CLAIM_TYPES` the attestor uses, so any mismatch between the TypeScript types and the contract fails here.
 - `packages/nextjs/lib/rewards/rewards.test.ts`: the demo `validate()`, signature recovery, HCS payloads, HTTP status codes, rate limiting and config errors.
 
-`yarn demo` is the integration test for HTS, HCS and SaucerSwap together.
+`yarn demo` is the integration test for HTS, HCS and SaucerSwap together. Testnet transaction links from building this template, including a fresh player claim with its matching HCS message, are in [docs/evidence.md](docs/evidence.md).
 
 ## Troubleshooting
 
@@ -205,8 +246,10 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 | A claim reverts with `HtsCallFailed("transferToken", 184)` | The player is not associated and has no free auto-association slots | Associate the account with the token (HashPack, or `associate()` on the token address), then claim again |
 | `HtsCallFailed(…)` or a revert whose trace shows `INSUFFICIENT_GAS` | Gas limit too low for an HTS call; first-time auto-association costs about 700k | Raise the matching value in `GAS` (`lib/rewards/constants.ts`) |
 | `/api/rewards/attest` returns 503 | The server cannot see a variable or the deployment | Check `GET /api/rewards/health`, which lists exactly what is missing |
-| `/rewards` says `… has no Hedera testnet account yet` | The connected wallet (often the scaffold's burner wallet) has never received HBAR, so no Hedera account exists for it | Connect a funded testnet wallet, or send HBAR to that address from the portal faucet |
-| Wallet shows **Wrong network** or transactions fail with a chain mismatch | The wallet is not on Hedera testnet (chain 296) | Switch networks from the wallet button in the header |
+| `/rewards` says `… has no Hedera testnet account yet` | The connected wallet has never received HBAR, so no Hedera account exists for it | Connect a funded testnet wallet, or send HBAR to that address from the portal faucet |
+| **Wrong network** in the header, and Claim or Cash out disabled | The wallet is on another chain, such as Hedera Mainnet (295) | Click **Switch to Hedera testnet**, or add Hedera Testnet to MetaMask as shown in [Try it in a browser](#try-it-in-a-browser) |
+| The first click on a page takes several seconds in `yarn dev` | Next.js dev mode compiles each route on first visit | Expected in dev; a production build (`yarn next:build`, then `yarn next:serve`) navigates in milliseconds |
+| HashScan shows raw hex for `Claimed` events | The vault is not verified | Run `yarn verify` |
 | `/api/rewards/attest` returns 409 `registered to signer …` | `ATTESTOR_PRIVATE_KEY` changed, or `.env` points at a different vault | Run `yarn deploy`; it re-registers every game to the current attestor |
 
 ## Compliance

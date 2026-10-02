@@ -31,6 +31,7 @@ This is a Scaffold-HBAR app (Yarn workspaces, Hardhat, Next.js App Router) that 
 - **One `.env`.** The repo-root `.env` configures scripts, Hardhat (`hardhat.config.ts`) and Next.js (`next.config.ts`). Write to it with `upsertEnv` from `scripts/lib/env.ts`, which keeps comments.
 - **Every page boots with no `.env` and no deployment**, returning 200. Unconfigured states show the command to run. Pages get config from `/api/rewards/health` at runtime, never from build-time env or `deployedContracts.ts` types.
 - **Phone width.** Pages must work at 360px with no horizontal scroll.
+- **One network.** `scaffold.config.ts` targets only the chain `HEDERA_NETWORK` selects, and the burner wallet stays off. Every rewards write checks `useRewards().wrongNetwork`, and `claimRound` checks it before calling the attest API, so no stray HCS scores are logged.
 - **Every failure message names its fix.**
 - **Cross-platform.** Scripts are TypeScript run with tsx; no bash-only commands in `package.json`.
 - **HTS response codes.** Check every HTS call against 22 (SUCCESS) and revert with `HtsCallFailed(operation, code)`.
@@ -52,7 +53,7 @@ yarn test
 yarn next:build
 ```
 
-For contract, deploy or attestor changes, also run `yarn deploy` and `yarn demo` on testnet and include the HashScan links.
+For contract, deploy or attestor changes, also run `yarn deploy`, `yarn verify` and `yarn demo` on testnet and include the HashScan links. Add submission-worthy links to `docs/evidence.md`.
 
 ## Gotchas
 
