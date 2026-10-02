@@ -1,138 +1,68 @@
 # Agent instructions
 
-Briefing for coding agents in this app (Cursor, Claude Code, Codex). Claude Code loads it through `CLAUDE.md`.
+Briefing for coding agents in this repo (Cursor, Claude Code, Codex). Claude Code loads it through `CLAUDE.md`. Read `README.md` for the user-facing flow.
 
-This is a Scaffold-HBAR dApp: Next.js App Router, wallet connect, Debug Contracts, and Hedera networks (testnet, mainnet, local fork). The CLI may have left only Hardhat or only Foundry.
+This is a Scaffold-HBAR app (Yarn workspaces, Hardhat, Next.js App Router) that adds a game rewards module: an attestor API signs EIP-712 claims, `RewardVault` mints an HTS reward token for valid claims, scores are logged to HCS, and SaucerSwap V1 cashes rewards out to HBAR.
 
-Use the package manager this project was created with (`packageManager` in the root `package.json`, or the lockfile). Examples use `yarn`; if the app was created with npm, swap `yarn <script>` for `npm run <script>`.
+## Repo map
 
-## Which Solidity package
+| Path | What lives there |
+| --- | --- |
+| `packages/hardhat/contracts/RewardVault.sol` | All on-chain logic: claims, caps, HTS token creation, mint and transfer |
+| `packages/hardhat/contracts/interfaces/IHederaTokenService.sol` | Minimal HTS system contract interface (`0x167`) |
+| `packages/hardhat/contracts/test/MockHederaTokenService.sol` | HTS test double, copied to `0x167` in tests |
+| `packages/hardhat/deploy/00_deploy_reward_vault.ts` | Idempotent deploy: vault, token, games, liquidity, SaucerSwap pool |
+| `packages/nextjs/lib/rewards/` | Shared rewards code used by the API routes, root scripts and Hardhat tests |
+| `packages/nextjs/lib/rewards/games/` | `GameDefinition`s; `validate()` is the only place game rules live |
+| `packages/nextjs/lib/rewards/vault.ts` | Hand-written RewardVault ABI used by the app and scripts; a contract test fails if it drifts from the compiled ABI |
+| `packages/nextjs/lib/rewards/registration.ts` | Checks each game's registered signer on the vault against `ATTESTOR_PRIVATE_KEY` |
+| `packages/nextjs/app/api/rewards/` | `GET health`, `POST attest` (409 when the vault's signer does not match the attestor) |
+| `scripts/` | Root `doctor`, `setup`, `deploy`, `demo` (TypeScript, run with tsx) |
 
-- `packages/hardhat` exists → Hardhat (`hardhat-deploy`)
-- `packages/foundry` exists → Foundry (Forge scripts)
-- `packages/nextjs` is always the frontend (App Router, RainbowKit, Wagmi, Viem, DaisyUI)
+`lib/rewards` modules use relative imports only (no `~~`), so tsx and Hardhat can import them. Files the Hardhat tests and deploy import (`claim`, `constants`, `games`, `ids`, `mirror`, `saucerswap`) must not import viem or the Hiero SDK.
 
-Follow only the flavor that is present.
+## Invariants
 
-## Commands
+- **Testnet by default.** Mainnet requires `HEDERA_NETWORK=mainnet` and `--confirm-mainnet`; never weaken that guard.
+- **No secrets in git.** Only `.env.example` is committed. Secret variables never get a `NEXT_PUBLIC_` prefix.
+- **One `.env`.** The repo-root `.env` configures scripts, Hardhat (`hardhat.config.ts`) and Next.js (`next.config.ts`). Write to it with `upsertEnv` from `scripts/lib/env.ts`, which keeps comments.
+- **Every page boots with no `.env` and no deployment**, returning 200. Unconfigured states show the command to run.
+- **Every failure message names its fix.**
+- **Cross-platform.** Scripts are TypeScript run with tsx; no bash-only commands in `package.json`.
+- **HTS response codes.** Check every HTS call against 22 (SUCCESS) and revert with `HtsCallFailed(operation, code)`.
+- **Measured gas.** Hedera charges at least 80% of the gas limit; take limits from `GAS` in `lib/rewards/constants.ts` and add `GAS.autoAssociation` when the recipient is not yet associated (`tokenRelationship()`).
 
-Package-prefixed scripts for package-specific work. Keep only truly cross-workspace commands unprefixed.
+## Add a game
+
+1. Create `packages/nextjs/lib/rewards/games/<name>.ts` exporting a `GameDefinition` (`id`, `maxPerClaim`, `dailyCap`, `validate`).
+2. Add it to `GAMES` in `games/index.ts`.
+3. Add unit tests for its `validate()` in `lib/rewards/rewards.test.ts`.
+4. `yarn deploy` registers it on-chain (`keccak256(id)` → attestor signer and caps).
+
+## Before calling a change done
 
 ```bash
-# Local chain + deploy + frontend (separate terminals)
-yarn hardhat:chain    # Hedera-forked Hardhat node on 8545
-yarn hardhat:deploy --network localhost
-yarn foundry:chain    # Anvil from the Foundry package
-yarn foundry:deploy
-yarn next:start       # http://localhost:3000
-
-# Frontend only
-yarn next:dev
-
-# Quality / build
 yarn lint
-yarn format
+yarn check-types
+yarn test
 yarn next:build
-yarn hardhat:compile
-yarn foundry:compile
-
-# Live networks
-yarn hardhat:deploy --network hederaTestnet   # or hederaMainnet
-yarn foundry:deploy --network hedera_testnet  # or hedera_mainnet
-yarn hardhat:verify -- HederaToken testnet [0xAddress]
-yarn foundry:verify:testnet
-
-# Deployer account
-yarn hardhat:account:generate
-yarn hardhat:account:import
-yarn hardhat:account
 ```
 
-`yarn hardhat:deploy` without `--network localhost` targets the in-process `hardhat` network, not the long-running fork.
+For contract, deploy or attestor changes, also run `yarn deploy` and `yarn demo` on testnet and include the HashScan links.
 
-## Layout
+## Gotchas
 
-### Hardhat
+- SaucerSwap V1: `router.whbar()` is the WHBAR **token** used in pairs and swap paths; `router.WHBAR()` is the wrapper contract.
+- New SaucerSwap pools need about 6.8M gas (limit 9M) and a $2 fee in tinycents, converted with the exchange-rate system contract at `0x168`.
+- `msg.value` in contracts is tinybars (8 decimals); the relay and wallets use 18 (`TINYBAR_TO_WEIBAR`).
+- The Next.js app registers abitype addresses as `string`; cast to `Hex` at the boundary when sharing code with the root scripts.
+- `deployedContracts.ts` ships empty and is generated by `yarn deploy`; do not edit it by hand or commit your own deployment into the template. The UI gets the vault address from `/api/rewards/health`, so it never depends on that file's types.
+- Solidity compiles for `cancun` (OpenZeppelin 5 uses `MCOPY`; Hedera supports it).
 
-- Contracts: `packages/hardhat/contracts/`
-- Deploy scripts: `packages/hardhat/deploy/`
-- Tests: `packages/hardhat/test/`
-- Config: `packages/hardhat/hardhat.config.ts`
-- Tagged deploy: if `deployHederaToken.tags = ["HederaToken"]`, run `yarn hardhat:deploy --tags HederaToken`
+## Frontend conventions
 
-### Foundry
-
-- Contracts: `packages/foundry/contracts/`
-- Deploy scripts: `packages/foundry/script/` (`Deploy.s.sol`, `DeployHederaToken.s.sol`, `DeployHtsTokenCreator.s.sol`)
-- Tests: `packages/foundry/test/`
-- Config: `packages/foundry/foundry.toml`
-- One contract: `yarn foundry:deploy --file DeployHederaToken.s.sol`
-
-### After deploy
-
-ABIs and addresses are written to `packages/nextjs/contracts/deployedContracts.ts`. Put third-party contracts in `packages/nextjs/contracts/externalContracts.ts`.
-
-Sample contracts on this starter: `HederaToken` (ERC-20) and `HtsTokenCreator` (HTS precompile at `0x167`).
-
-## Frontend contract interaction
-
-Hooks live in `packages/nextjs/hooks/scaffold-hbar`. Use the names that exist in the codebase:
-
-- `useScaffoldReadContract` — not `useScaffoldContractRead`
-- `useScaffoldWriteContract` — not `useScaffoldContractWrite`
-
-Also: `useScaffoldWatchContractEvent`, `useScaffoldEventHistory`, `useDeployedContractInfo`, `useScaffoldContract`, `useTransactor`.
-
-```typescript
-const { data: balance } = useScaffoldReadContract({
-  contractName: "HederaToken",
-  functionName: "balanceOf",
-  args: [connectedAddress],
-});
-
-const { writeContractAsync, isPending } = useScaffoldWriteContract({
-  contractName: "HederaToken",
-});
-
-await writeContractAsync({
-  functionName: "mint",
-  args: [connectedAddress, parseEther("1")],
-});
-```
-
-`HederaToken.mint` is `onlyOwner`. For HTS creation, `HtsTokenCreator.createToken` is payable (HTS fee via `msg.value`) and emits `TokenCreated`.
-
-### UI
-
-Use `@scaffold-hbar-ui/components` for web3 UI: `Address`, `AddressInput`, `Balance`, `EtherInput`, `IntegerInput`.
-
-Use DaisyUI classes, not raw Tailwind when a DaisyUI component exists:
-
-```tsx
-<button className="btn btn-primary">Connect</button>
-```
-
-### Networks
-
-- Hardhat: `packages/hardhat/hardhat.config.ts` (`hederaTestnet` 296, `hederaMainnet` 295)
-- Foundry: `packages/foundry/foundry.toml` (`hedera_testnet`, `hedera_mainnet`)
-- Next.js: `packages/nextjs/scaffold.config.ts` (target networks, polling, RPC overrides, WalletConnect)
+Hooks live in `packages/nextjs/hooks/scaffold-hbar`: `useScaffoldReadContract`, `useScaffoldWriteContract`, `useScaffoldWatchContractEvent`, `useScaffoldEventHistory`, `useDeployedContractInfo`, `useScaffoldContract`, `useTransactor`. Use `@scaffold-hbar-ui/components` (`Address`, `AddressInput`, `Balance`, `EtherInput`, `IntegerInput`) and DaisyUI classes. App Router pages live under `packages/nextjs/app/`; add `"use client"` when a page uses hooks. Next.js imports use the `~~` alias.
 
 ## Style
 
-| Style | Use |
-| --- | --- |
-| `UpperCamelCase` | types, components |
-| `lowerCamelCase` | variables, functions |
-| `CONSTANT_CASE` | constants |
-| `snake_case` | Hardhat deploy files and Foundry scripts |
-
-Next.js imports use the `~~` alias:
-
-```tsx
-import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
-```
-
-App Router pages live under `packages/nextjs/app/`. Add `"use client"` when the page uses hooks.
-
-Prefer `type` over `interface`. No `T` prefix on types. Let TypeScript infer when it can. Comments should add information.
+`UpperCamelCase` for types and components, `lowerCamelCase` for variables and functions, `CONSTANT_CASE` for constants, `snake_case` for Hardhat deploy files. Prefer `type` over `interface`; no `T` prefix on types. Comments should add information.

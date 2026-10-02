@@ -1,9 +1,15 @@
+import fs from "fs";
 import type { NextConfig } from "next";
 import path from "path";
+
+// The repo-root .env is the single source of configuration; values already in the environment win.
+const rootEnv = path.join(__dirname, "../../.env");
+if (fs.existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   reactStrictMode: true,
+  serverExternalPackages: ["@hiero-ledger/sdk"],
   devIndicators: false,
   typescript: {
     ignoreBuildErrors: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERROR === "true",

@@ -1,5 +1,7 @@
 import * as dotenv from "dotenv";
-dotenv.config();
+import * as path from "path";
+// The repo-root .env is the single source of configuration for every package.
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-ethers";
@@ -21,7 +23,7 @@ import generateTsAbis from "./scripts/generateTsAbis";
 // Hedera JSON-RPC URL (testnet default). Set HEDERA_RPC_URL in .env for mainnet.
 const hederaRpcUrl = process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api";
 
-// Deployer key: run `yarn account:generate` or `yarn account:import`, or set __RUNTIME_DEPLOYER_PRIVATE_KEY at runtime.
+// Deployer key: set at runtime by scripts/runHardhatDeployWithPK.ts from the root .env.
 const deployerPrivateKey =
   process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
@@ -31,6 +33,8 @@ const config: HardhatUserConfig = {
       {
         version: "0.8.28",
         settings: {
+          // OpenZeppelin 5.x uses MCOPY; Hedera supports Cancun opcodes.
+          evmVersion: "cancun",
           optimizer: {
             enabled: true,
             runs: 200,
@@ -49,6 +53,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: hederaRpcUrl,
+        enabled: process.env.HEDERA_FORKING === "true",
         // @ts-expect-error - custom property for hedera-forking plugin
         chainId: 296,
         workerPort: 10001,

@@ -1,5 +1,5 @@
 {
-  "name": "sh",
+  "name": "template-hedera-game-rewards",
   "version": "0.0.1",
   "private": true,
   "workspaces": {
@@ -9,6 +9,11 @@
     ]
   },
   "scripts": {
+    "check-types": "yarn next:check-types && yarn hardhat:check-types && tsc -p scripts",
+    "demo": "tsx scripts/demo.ts",
+    "deploy": "tsx scripts/deploy.ts",
+    "dev": "yarn next:dev",
+    "doctor": "tsx scripts/doctor.ts",
     "format": "yarn next:format && yarn hardhat:format",
     "hardhat:account": "yarn workspace @sh/hardhat account",
     "hardhat:account:generate": "yarn workspace @sh/hardhat account:generate",
@@ -27,6 +32,7 @@
     "hardhat:test": "yarn workspace @sh/hardhat test",
     "hardhat:verify": "yarn workspace @sh/hardhat verify:contract",
     "lint": "yarn next:lint && yarn hardhat:lint",
+    "lint-staged": "lint-staged",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
     "next:dev": "yarn workspace @sh/nextjs dev",
@@ -34,14 +40,20 @@
     "next:lint": "yarn workspace @sh/nextjs lint",
     "next:serve": "yarn workspace @sh/nextjs serve",
     "next:start": "yarn workspace @sh/nextjs start",
+    "next:test": "yarn workspace @sh/nextjs test",
     "postinstall": "husky",
     "precommit": "lint-staged",
-    "lint-staged": "lint-staged"
+    "setup": "tsx scripts/setup.ts",
+    "test": "yarn hardhat:test && yarn next:test"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
+    "@types/node": "^20.19.0",
     "husky": "^9.1.6",
-    "lint-staged": "^15.2.10"
+    "lint-staged": "^15.2.10",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2",
+    "viem": "2.39.0"
   },
   "engines": {
     "node": ">=20.18.3"

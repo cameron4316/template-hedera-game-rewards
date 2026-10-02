@@ -1,9 +1,6 @@
 import { ethers } from "ethers";
-import { parse, stringify } from "envfile";
-import * as fs from "fs";
 import password from "@inquirer/password";
-
-const envFilePath = "./.env";
+import { loadEnv, upsertEnv } from "../../../scripts/lib/env";
 
 const getValidatedPassword = async () => {
   while (true) {
@@ -17,39 +14,26 @@ const getValidatedPassword = async () => {
   }
 };
 
-const setNewEnvConfig = async (existingEnvConfig = {}) => {
+const setNewEnvConfig = async () => {
   console.log("👛 Generating new Wallet\n");
   const randomWallet = ethers.Wallet.createRandom();
 
   const pass = await getValidatedPassword();
   const encryptedJson = await randomWallet.encrypt(pass);
 
-  const newEnvConfig = {
-    ...existingEnvConfig,
-    DEPLOYER_PRIVATE_KEY_ENCRYPTED: encryptedJson,
-  };
-
-  // Store in .env
-  fs.writeFileSync(envFilePath, stringify(newEnvConfig));
-  console.log("\n📄 Encrypted Private Key saved to packages/hardhat/.env file");
+  upsertEnv({ DEPLOYER_PRIVATE_KEY_ENCRYPTED: encryptedJson });
+  console.log("\n📄 Encrypted Private Key saved to the root .env file");
   console.log("🪄 Generated wallet address:", randomWallet.address, "\n");
   console.log("⚠️ Make sure to remember your password! You'll need it to decrypt the private key.");
 };
 
 async function main() {
-  if (!fs.existsSync(envFilePath)) {
-    // No .env file yet.
-    await setNewEnvConfig();
+  loadEnv();
+  if (process.env.DEPLOYER_PRIVATE_KEY_ENCRYPTED) {
+    console.log("⚠️ You already have a deployer account. Check DEPLOYER_PRIVATE_KEY_ENCRYPTED in the root .env file");
     return;
   }
-
-  const existingEnvConfig = parse(fs.readFileSync(envFilePath).toString());
-  if (existingEnvConfig.DEPLOYER_PRIVATE_KEY_ENCRYPTED) {
-    console.log("⚠️ You already have a deployer account. Check the packages/hardhat/.env file");
-    return;
-  }
-
-  await setNewEnvConfig(existingEnvConfig);
+  await setNewEnvConfig();
 }
 
 main().catch(error => {

@@ -7,7 +7,7 @@
     "account:import": "hardhat run scripts/importAccount.ts",
     "account:reveal-pk": "hardhat run scripts/revealPK.ts",
     "chain": "HEDERA_FORKING=true hardhat node --network hardhat --no-deploy",
-    "check-types": "tsc --noEmit --incremental",
+    "check-types": "hardhat compile && tsc --noEmit --incremental",
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "deploy": "ts-node scripts/runHardhatDeployWithPK.ts",
@@ -16,7 +16,7 @@
     "format": "prettier --write './**/*.(ts|sol)'",
     "lint": "eslint",
     "lint-staged": "eslint",
-    "test": "HEDERA_FORKING=true REPORT_GAS=true hardhat test",
+    "test": "hardhat test",
     "verify:contract": "ts-node scripts/verifySourcify.ts"
   },
   "devDependencies": {
@@ -55,7 +55,6 @@
     "@openzeppelin/contracts": "5.6.1",
     "@typechain/ethers-v6": "~0.5.1",
     "dotenv": "~16.4.5",
-    "envfile": "~7.1.0",
     "qrcode": "~1.5.4"
   }
 }
