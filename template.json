@@ -1,0 +1,20 @@
+{
+  "name": "template-hedera-game-rewards",
+  "description": "Game-agnostic rewards module for Hedera: attested claims mint HTS reward tokens from a vault contract, scores log to HCS, and SaucerSwap cashes rewards out to HBAR.",
+  "version": "0.1.0",
+  "create-scaffold-hbar": {
+    "requirements": {
+      "node": ">=20.18.3"
+    },
+    "capabilities": {
+      "frontend": ["nextjs-app"],
+      "solidityFramework": ["hardhat"],
+      "packageManager": ["yarn"]
+    },
+    "defaults": {
+      "frontend": "nextjs-app",
+      "solidityFramework": "hardhat",
+      "packageManager": "yarn"
+    }
+  }
+}

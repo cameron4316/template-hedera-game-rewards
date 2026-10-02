@@ -22,4 +22,11 @@ node_modules
 # cli
 dist
 
+
+# env files (only .env.example is committed)
 .env
+.env.*
+!.env.example
+
+# local planning notes
+PLAN.md
