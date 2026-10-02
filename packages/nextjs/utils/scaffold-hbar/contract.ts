@@ -336,8 +336,6 @@ export type UseScaffoldEventHistoryData<
     >
   | undefined;
 
-export type AbiParameterTuple = Extract<AbiParameter, { type: "tuple" | `tuple[${string}]` }>;
-
 /**
  * Enhanced error parsing that creates a lookup table from all deployed contracts
  * to decode error signatures from any contract in the system

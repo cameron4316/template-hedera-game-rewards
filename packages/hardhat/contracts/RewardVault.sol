@@ -133,7 +133,10 @@ contract RewardVault is Ownable, ReentrancyGuard, EIP712 {
             game.mintedToday = 0;
         }
         uint64 amount = uint64(c.amount);
-        if (game.mintedToday + amount > game.dailyCap) revert DailyCapExceeded(game.dailyCap - game.mintedToday);
+        if (game.mintedToday + amount > game.dailyCap) {
+            // registerGame may lower dailyCap below what was already minted today.
+            revert DailyCapExceeded(game.mintedToday < game.dailyCap ? game.dailyCap - game.mintedToday : 0);
+        }
 
         game.mintedToday += amount;
         usedNonces[c.nonce] = true;

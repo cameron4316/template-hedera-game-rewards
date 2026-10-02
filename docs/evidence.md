@@ -2,6 +2,8 @@
 
 All transactions are on Hedera testnet, checked against the mirror node. The deployment is the reference deployment from building this template; your own `yarn deploy` creates a separate vault, token and topic.
 
+The reference vault was deployed and verified from RewardVault.sol as of commit `7a44003`. A later fix changed only what `DailyCapExceeded` reports when an owner lowers a game's daily cap below that day's mints (now 0 instead of an arithmetic panic). Claims, caps and minting behave the same, but the bytecode differs, so a fresh `yarn deploy` and `yarn verify` are needed to match the current source.
+
 ## Reference deployment
 
 | Item | ID | Link |

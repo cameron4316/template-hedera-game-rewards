@@ -9,19 +9,10 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-// Only load the Hedera forking plugin when starting the local node (yarn hardhat:chain / yarn hardhat:fork).
-// Deploying to an already-running node doesn't need it and would fail with EADDRINUSE.
-if (process.env.HEDERA_FORKING === "true") {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional plugin load
-  require("@hashgraph/system-contracts-forking/plugin");
-}
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 
 import generateTsAbis from "./scripts/generateTsAbis";
-
-// Hedera JSON-RPC URL (testnet default). Set HEDERA_RPC_URL in .env for mainnet.
-const hederaRpcUrl = process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api";
 
 // Deployer key: set at runtime by scripts/runHardhatDeployWithPK.ts from the root .env.
 const deployerPrivateKey =
@@ -43,6 +34,7 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+  // Tests run on the in-process hardhat network with an HTS mock at 0x167; deploys target Hedera only.
   defaultNetwork: "hardhat",
   namedAccounts: {
     deployer: {
@@ -50,15 +42,6 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    hardhat: {
-      forking: {
-        url: hederaRpcUrl,
-        enabled: process.env.HEDERA_FORKING === "true",
-        // @ts-expect-error - custom property for hedera-forking plugin
-        chainId: 296,
-        workerPort: 10001,
-      },
-    },
     hederaTestnet: {
       url: "https://testnet.hashio.io/api",
       accounts: [deployerPrivateKey],

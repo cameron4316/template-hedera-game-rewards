@@ -657,7 +657,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/abi@npm:5.7.0, @ethersproject/abi@npm:~5.7.0":
+"@ethersproject/abi@npm:5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/abi@npm:5.7.0"
   dependencies:
@@ -1111,7 +1111,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/providers@npm:5.7.2, @ethersproject/providers@npm:~5.7.2":
+"@ethersproject/providers@npm:5.7.2":
   version: 5.7.2
   resolution: "@ethersproject/providers@npm:5.7.2"
   dependencies:
@@ -1510,17 +1510,6 @@ __metadata:
   bin:
     proto-loader-gen-types: build/bin/proto-loader-gen-types.js
   checksum: 9f19f4c611a17cd33aec0d6e3686a76696495f40593f7c284933c4b7877f58dfa5a225ddc20705860a632311f4dc0d143cb6a0da7b51b6f5ffd7de26938df308
-  languageName: node
-  linkType: hard
-
-"@hashgraph/system-contracts-forking@npm:0.1.2":
-  version: 0.1.2
-  resolution: "@hashgraph/system-contracts-forking@npm:0.1.2"
-  dependencies:
-    ethers: ^6.1.0
-  peerDependencies:
-    hardhat: ^2.0.0
-  checksum: 8613221b2eb154c3ee733465dd713c5e45893e4cd94fd155cbb63f7ed2413ace0abafa54f873afcfcd7d275dab5a0d34148d091bade7d1d9536ead1bf746a731
   languageName: node
   linkType: hard
 
@@ -3362,9 +3351,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sh/hardhat@workspace:packages/hardhat"
   dependencies:
-    "@ethersproject/abi": ~5.7.0
-    "@ethersproject/providers": ~5.7.2
-    "@hashgraph/system-contracts-forking": 0.1.2
     "@inquirer/password": ^4.0.2
     "@nomicfoundation/hardhat-chai-matchers": ~2.0.7
     "@nomicfoundation/hardhat-ethers": ~3.0.8
@@ -3416,7 +3402,6 @@ __metadata:
     "@types/react": ^19.0.7
     abitype: 1.0.6
     blo: ^1.2.0
-    burner-connector: 0.0.20
     daisyui: ^5.0.9
     eslint: ^9.23.0
     eslint-config-next: ^15.2.3
@@ -3427,7 +3412,6 @@ __metadata:
     next-themes: ^0.4.6
     postcss: ^8.4.45
     prettier: ^3.5.3
-    qrcode.react: ^4.0.1
     react: ^19.2.3
     react-dom: ^19.2.3
     react-hot-toast: ^2.4.0
@@ -6558,17 +6542,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"burner-connector@npm:0.0.20":
-  version: 0.0.20
-  resolution: "burner-connector@npm:0.0.20"
-  dependencies:
-    "@rainbow-me/rainbowkit": 2.2.9
-    viem: 2.39.0
-    wagmi: 2.19.5
-  checksum: 10f072a6a2a5e70540dbde830ef7fc4eecba2e3e8d2f82070680f7bf9520856d8dc6f490a3517ac345554a21650bf45af69e5e4af9bcf2247cb8619cc85bb395
-  languageName: node
-  linkType: hard
-
 "bytes@npm:~3.1.2":
   version: 3.1.2
   resolution: "bytes@npm:3.1.2"
@@ -8579,7 +8552,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^6.1.0, ethers@npm:^6.14.0":
+"ethers@npm:^6.14.0":
   version: 6.16.0
   resolution: "ethers@npm:6.16.0"
   dependencies:
@@ -12572,15 +12545,6 @@ __metadata:
   version: 0.5.4
   resolution: "qr@npm:0.5.4"
   checksum: 8d662c3e74484f22df71e299818501ef1abf42f7f8eb76a0d46daa12839031623ec0ca1de85e5a6d3298fbfcb29065563e8176c68920ea2f294100c214bda72a
-  languageName: node
-  linkType: hard
-
-"qrcode.react@npm:^4.0.1":
-  version: 4.2.0
-  resolution: "qrcode.react@npm:4.2.0"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: fe7f496bb3696eedf4113390c6feda386e7a5e5d69d12fcc2489c55ecec467f682dc99b0d8085afbeb8ed3962c1f7554b26225cd78b72e78416f9506abbebd5d
   languageName: node
   linkType: hard
 

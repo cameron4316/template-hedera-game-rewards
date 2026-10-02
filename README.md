@@ -87,7 +87,7 @@ deploying "RewardVault" ...: deployed at 0x42aD…fD46 with 1819655 gas
 
 **6. `yarn dev`**: starts the app on http://localhost:3000. `GET /api/rewards/health` reports whether everything is configured, including whether the vault's registered signer for each game matches `ATTESTOR_PRIVATE_KEY`.
 
-In dev mode, Next.js compiles each route the first time you open it, so a page's first visit can take several seconds (about 7 seconds per page measured here); later clicks take about 30 ms. A production build (`yarn next:build`, then `yarn next:serve`) has no such delay: clicks between pages measured 6–14 ms.
+In dev mode, Next.js compiles each route the first time you open it, so a page's first visit can take several seconds (about 7 seconds per page measured here); later clicks take about 30 ms. A production build (`yarn next:build`, then `yarn next:start`) has no such delay: clicks between pages measured 6–14 ms.
 
 ## Costs
 
@@ -131,6 +131,8 @@ Everything reads the root `.env`: scripts, Hardhat and the Next.js server. Only 
 | `NEXT_PUBLIC_REWARD_TOKEN_ID` | `yarn deploy` | Attestor, demo | none |
 | `SAUCERSWAP_V1_ROUTER_ID` | Preset | Deploy, demo | `0.0.19264` (testnet) |
 | `HEDERA_MIRROR_URL` | Preset | Everything that reads | testnet mirror node |
+| `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | You, optional | Wallet connection | a shared Scaffold-HBAR project ID |
+| `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL`, `NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL` | You, optional | Browser reads and writes | Hashio |
 
 The vault address comes from `packages/nextjs/contracts/deployedContracts.ts`. It ships empty, and `yarn deploy` fills it with your deployment.
 
@@ -223,7 +225,7 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 | `yarn dev` | Next.js on port 3000 | Nothing |
 | `yarn test` | Contract tests (HTS mocked) and rewards unit tests, offline | Nothing |
 | `yarn lint`, `yarn check-types`, `yarn next:build` | Static checks and production build | Nothing |
-| `yarn next:serve` | Serves the production build on port 3000 | `yarn next:build` |
+| `yarn next:start` | Serves the production build on port 3000 | `yarn next:build` |
 
 ## Testing
 
@@ -248,7 +250,7 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 | `/api/rewards/attest` returns 503 | The server cannot see a variable or the deployment | Check `GET /api/rewards/health`, which lists exactly what is missing |
 | `/rewards` says `… has no Hedera testnet account yet` | The connected wallet has never received HBAR, so no Hedera account exists for it | Connect a funded testnet wallet, or send HBAR to that address from the portal faucet |
 | **Wrong network** in the header, and Claim or Cash out disabled | The wallet is on another chain, such as Hedera Mainnet (295) | Click **Switch to Hedera testnet**, or add Hedera Testnet to MetaMask as shown in [Try it in a browser](#try-it-in-a-browser) |
-| The first click on a page takes several seconds in `yarn dev` | Next.js dev mode compiles each route on first visit | Expected in dev; a production build (`yarn next:build`, then `yarn next:serve`) navigates in milliseconds |
+| The first click on a page takes several seconds in `yarn dev` | Next.js dev mode compiles each route on first visit | Expected in dev; a production build (`yarn next:build`, then `yarn next:start`) navigates in milliseconds |
 | HashScan shows raw hex for `Claimed` events | The vault is not verified | Run `yarn verify` |
 | `/api/rewards/attest` returns 409 `registered to signer …` | `ATTESTOR_PRIVATE_KEY` changed, or `.env` points at a different vault | Run `yarn deploy`; it re-registers every game to the current attestor |
 

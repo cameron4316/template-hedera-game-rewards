@@ -129,6 +129,18 @@ describe("RewardVault", () => {
       await expect(redeem()).to.emit(vault, "Claimed");
     });
 
+    it("reports 0 remaining when the daily cap is lowered below today's mints", async () => {
+      const { vault, attestor, makeClaim, sign } = await loadFixture(deployFixture);
+      const redeem = async () => {
+        const claim = await makeClaim({ gameId: SMALL_ID, amount: 10n });
+        return vault.claim(claim, await sign(claim));
+      };
+      await redeem();
+      await redeem();
+      await vault.registerGame(SMALL_ID, attestor.address, 10, 15);
+      await expect(redeem()).to.be.revertedWithCustomError(vault, "DailyCapExceeded").withArgs(0);
+    });
+
     it("rejects claims for paused or unknown games", async () => {
       const { vault, makeClaim, sign } = await loadFixture(deployFixture);
       await vault.setGameActive(DEMO_ID, false);

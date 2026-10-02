@@ -1,70 +1,32 @@
-# Hardhat package (Hedera)
+# packages/hardhat
 
-Hardhat config, contracts, deploy scripts, tests, and Hashscan verification for this monorepo.
+The Solidity side of the Hedera Game Rewards template. For setup, the full flow and troubleshooting, see the [root README](../../README.md).
 
-## Local development
+## What's here
 
-From the repo root, use the explicit `hardhat:*` scripts for this package. Inside `packages/hardhat`, use the unprefixed package-local scripts.
+| Path | Purpose |
+| --- | --- |
+| `contracts/RewardVault.sol` | Treasury and supply key of the HTS reward token. Mints for EIP-712 claims signed by a game's attestor, within per-claim and daily caps. |
+| `contracts/interfaces/IHederaTokenService.sol` | Minimal interface for the HTS system contract at `0x167`. |
+| `contracts/test/MockHederaTokenService.sol` | HTS test double that the tests copy to `0x167`. |
+| `deploy/00_deploy_reward_vault.ts` | Deploys the vault, creates the token, registers games and seeds the SaucerSwap V1 pool. Each step checks on-chain state, so a re-run resumes. |
+| `test/RewardVault.test.ts` | Offline tests on the in-process Hardhat network. |
+| `scripts/` | Deployer key handling, `deployedContracts.ts` generation and Sourcify verification. |
 
-1. **Start the local chain** (terminal 1, from repo root):
-   ```bash
-   yarn hardhat:chain
-   ```
-   This starts `hardhat node` with **Hedera testnet forking** (`HEDERA_FORKING=true` and `@hashgraph/system-contracts-forking`). JSON-RPC is served at **http://127.0.0.1:8545**.
+Configuration comes from the repo-root `.env`. Contracts compile with Solidity 0.8.28 for the `cancun` EVM.
 
-2. **Deploy to the running fork** (terminal 2):
-   ```bash
-   yarn hardhat:deploy --network localhost
-   ```
-   Use **`localhost`** so Hardhat connects to the long-running node on port 8545.
+## Commands
 
-   **`yarn hardhat:deploy` without `--network localhost`** uses the default network `hardhat`, which is the **in-process ephemeral** Hardhat network—**not** the same process as `yarn hardhat:chain`. For deploys against the forked node you started in step 1, always pass **`--network localhost`** while that node is running.
+Run these from the repo root. `yarn deploy`, `yarn verify` and `yarn test` wrap them with the right network and checks.
 
-3. **Run contract tests** (from repo root; tests use `HEDERA_FORKING=true` and can run against the fork or standalone):
-   ```bash
-   yarn hardhat:test
-   ```
+| Command | What it does |
+| --- | --- |
+| `yarn hardhat:compile` | Compiles the contracts and generates TypeChain types |
+| `yarn hardhat:test` | Runs the contract tests (no network needed) |
+| `yarn hardhat:deploy --network hederaTestnet` | Deploys with the deployer key from the root `.env`. Prefer `yarn deploy`, which also writes `NEXT_PUBLIC_REWARD_TOKEN_ID` |
+| `yarn hardhat:verify RewardVault testnet` | Verifies a deployment on Sourcify. Prefer `yarn verify` |
+| `yarn hardhat:account:import` | Stores an encrypted deployer key in the root `.env` (optional; otherwise `HEDERA_OPERATOR_KEY` deploys) |
+| `yarn hardhat:account:generate`, `yarn hardhat:account`, `yarn hardhat:account:reveal-pk` | Create, show or reveal the encrypted deployer key |
+| `yarn hardhat:lint`, `yarn hardhat:check-types`, `yarn hardhat:format` | Static checks and formatting |
 
-## Deploy and verify on Hedera testnet/mainnet
-
-You need a deployer account with HBAR on the target network. Without funds, deploy and verify will fail with "Sender account not found".
-
-1. **Generate or import an account** (from the repo root):
-   ```bash
-   yarn hardhat:account:generate
-   ```
-   or
-   ```bash
-   yarn hardhat:account:import
-   ```
-   The encrypted key is stored in `packages/hardhat/.env`.
-
-2. **Fund the account on testnet:**  
-   Use the [Hedera Portal faucet](https://portal.hedera.com/faucet) to receive testnet HBAR.
-
-3. **Deploy to Hedera testnet** (from repo root):
-   ```bash
-   yarn hardhat:deploy --network hederaTestnet
-   ```
-   or
-   ```bash
-   yarn hardhat:deploy --network hedera_testnet
-   ```
-   You will be prompted to enter the password to decrypt your deployer key.
-
-4. **Verify on Sourcify** (shows as verified on HashScan). Uses the solc standard-json from `artifacts/build-info` and submits directly to the Sourcify API v2 — `@nomicfoundation/hardhat-verify` is not used because its Hardhat 2-compatible line only speaks the removed Sourcify API v1:
-   ```bash
-   yarn hardhat:verify -- HederaToken testnet                          # address from deployments/hederaTestnet/
-   yarn hardhat:verify -- HederaToken testnet 0xYourContractAddress    # explicit address
-   ```
-   Use `mainnet` instead of `testnet` for chain 295.
-
-## Layout
-
-- `contracts/` — Solidity sources
-- `deploy/` — hardhat-deploy scripts (e.g. `00_deploy_hedera_token.ts`)
-- `scripts/` — generateAccount, importAccount, verifySourcify.ts, etc.
-- `test/` — contract tests
-- `hardhat.config.ts` — networks (`hardhat`, `localhost` for RPC at 127.0.0.1:8545, `hederaTestnet`, `hederaMainnet`)
-
-Network and RPC URLs are in `hardhat.config.ts`. Deployer key is read from `.env` (encrypted) and decrypted at deploy time for live networks.
+There is no local chain. Hedera's HTS and exchange-rate system contracts don't exist on a plain Hardhat node, so tests use the mock and real behaviour is proven on testnet with `yarn demo`.
