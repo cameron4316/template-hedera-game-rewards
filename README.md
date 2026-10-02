@@ -211,6 +211,7 @@ The vault caps limit the damage from a cheated client or a leaked attestor key. 
 - **SaucerSwap has two WHBAR addresses.** `router.whbar()` returns the WHBAR token (`0.0.15058` on testnet), which is used in pairs and swap paths. `router.WHBAR()` returns the wrapper contract (`0.0.15057`).
 - **New pools need about 6.8M gas, not the documented 3.2M.** Creating a pool creates an HTS LP token and makes two associations. The pool creation fee is $2, priced in tinycents through the exchange-rate system contract (about 19 HBAR).
 - **The HTS creation fee is paid in `msg.value`.** `yarn deploy` attaches 20 HBAR to `initRewardToken`. About 11.7 is used and the vault refunds the rest.
+- **Balances come from the mirror node.** Every balance and association check (`yarn doctor`, `tokenHolding()` in `lib/rewards/mirror.ts`, the Rewards page) reads the mirror node REST API, never the SDK's `AccountBalanceQuery`. Hedera has been throttling that consensus-node query since release v0.74 and schedules its removal on mainnet with release v0.77. If you need an HBAR balance through the SDK, use `MirrorNodeAccountBalanceQuery` (`@hiero-ledger/sdk` v2.87.0 or later). It returns HBAR only, so token balances still come from the mirror node's `/accounts/{id}/tokens` endpoint.
 - **No HTS locally.** Local Hardhat has no code at `0x167`, so the tests copy a mock there. Real behaviour is proven on testnet by `yarn demo`.
 
 ## Scripts

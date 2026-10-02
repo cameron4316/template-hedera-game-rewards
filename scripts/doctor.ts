@@ -87,7 +87,7 @@ async function main() {
     }
     const hbar = account.balance.balance / 1e8;
     if (hbar >= RECOMMENDED_HBAR) ok(`Operator balance ${hbar.toFixed(2)} HBAR`);
-    else warn(`Operator balance ${hbar.toFixed(2)} HBAR (deploy needs about 60)`, "Top up at https://portal.hedera.com/faucet");
+    else warn(`Operator balance ${hbar.toFixed(2)} HBAR. yarn deploy needs about 50; ${RECOMMENDED_HBAR} is recommended`, "Top up at https://portal.hedera.com/faucet");
   } catch {
     bad(`Operator ${operatorId} was not found on ${network}`, "Check HEDERA_OPERATOR_ID and HEDERA_NETWORK in the root .env");
   }
